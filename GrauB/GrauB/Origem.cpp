@@ -19,12 +19,12 @@ using namespace std;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-//Stb_image
-#include "stb_image.h"
 
+#include "stb_image.h"
 #include "Shader.h"
 #include "Camera.h"
 
+// Variaveis
 GLuint VAO, VBO, SkyVAO, SkyVBO;
 GLuint texture, texture2;
 GLuint SkyTexture;
@@ -47,7 +47,6 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -57,12 +56,8 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Protótipos das funções
-void SetupVertices();
 GLuint loadObject(string filepath, int& nVerts, glm::vec3 color = glm::vec3(1.0, 0.0, 1.0));
 GLuint loadTexture(string filePath);
-void SetupVerticesSky();
-GLuint loadSkyTexture(vector<string> faces);
-
 
 bool rotateX = false, rotateY = false, rotateZ = false;
 
@@ -80,7 +75,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Criação da janela GLFW
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Tarefa M4", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Tarefa GB", nullptr, nullptr);
 	if (!window)
 	{
 		cout << "Falha a criar window" << endl;
@@ -113,34 +108,16 @@ int main()
 
 	// Compilando e buildando o programa de shader
 	Shader shader("VertexShader.vs", "FragmentShader.fs");
+
+	// Load da textura
 	texture = loadTexture("Terra.jpg");
 	texture2 = loadTexture("Lua.jpeg");
 
-
-	// universo
-	Shader shader2("vsSky.vs", "fsSky.fs");
-
-	vector<string> faces
-	{
-		"Sol.jpeg", "Universo.jpeg", "Universo.jpeg","Universo.jpeg", "Universo.jpeg", "Universo.jpeg"
-	};
-
-	SkyTexture = loadSkyTexture(faces);
-	SetupVerticesSky();
-
-	shader2.use();
-
-	glActiveTexture(GL_TEXTURE0);
-	shader2.setInt("sky", 0);
-
-
-	//SetupVertices();	
 	shader.use();
 
 	// load object
 	int nVertices;
 	GLuint object = loadObject("bola.obj", nVertices);
-
 
 	//Definindo as propriedades do material da superficie
 	shader.setFloat("ka", 0.2);
@@ -149,15 +126,14 @@ int main()
 	shader.setFloat("ke", 0.2);
 
 	//Definindo a fonte de luz pontual
-	shader.setVec3("lightPos", -2.0, 10.0, 2.0);
+	shader.setVec3("lightPos", 10.0, 0.0, 2.0);
 	shader.setVec3("lightColor", 1.0, 1.0, 1.0);
+
 
 	// camera
 	shader.setVec3("viewPos", camera.Position);
-
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 	shader.setMat4("projection", projection);
-
 	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("view", view);
 
@@ -179,12 +155,12 @@ int main()
 		lastFrame = currentTime;
 
 		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); //cor de fundo
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Atualização da camera
 		glm::mat4 view = camera.GetViewMatrix();
 		shader.setMat4("view", view);
-
 
 		/*************
 		*    Terra   *
@@ -204,10 +180,9 @@ int main()
 
 		/*************
 		*    Lua   *
-		*************/
-		
+		*************/		
 		glm::mat4 model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(-1.5f, -1.0f, 0.0f));
+		model1 = glm::translate(model1, glm::vec3(2.0f, -1.0f, 0.0f));
 		model1 = glm::rotate(model1, glm::radians(20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
 		model1 = glm::scale(model1, glm::vec3(-0.3f));
 		shader.setMat4("model", model1);
@@ -217,31 +192,12 @@ int main()
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, nVertices);
 
-
-		/*************
-		*  Universo  *
-		*************/
-
-		glDepthFunc(GL_LEQUAL);// compara novos valores de profundidade
-
-		shader2.use();
-		//view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-		shader2.setMat4("view", view);
-		shader2.setMat4("projection", projection);
-		
-		glBindVertexArray(SkyVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, SkyTexture);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
-		glDepthFunc(GL_LESS);
-
-
 		// Troca os buffers da tela
 		glfwSwapBuffers(window);
 	}
 	// Pede pra OpenGL desalocar os buffers
 	glDeleteVertexArrays(1, &VAO);
+
 	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
 	glfwTerminate();
 	return 0;
@@ -338,50 +294,6 @@ GLuint loadTexture(string filePath)
 	return textureID;
 }
 
-GLuint loadSkyTexture(vector<string> faces)
-{
-	std::cout << "Carregando sky texture" << std::endl;
-
-	GLuint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	int width, height, nrChannels;
-	for (unsigned int i = 0; i < faces.size(); i++)
-	{
-		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-		{
-			GLenum format{};
-			if (nrChannels == 1)
-				format = GL_RED;
-			else if (nrChannels == 3)
-				format = GL_RGB;
-			else if (nrChannels == 4)
-				format = GL_RGBA;
-
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-			
-		}
-		else
-		{
-			std::cout << "Erro no carregamento do arquivo sky texture : " << faces[i] << std::endl;
-			stbi_image_free(data);
-		}
-
-		stbi_image_free(data);
-	}
-	cout << "Textura sky: ok" << endl;
-
-	return texture;
-}
-
 void SetupVertices()
 {
 	float vertices[] = {
@@ -444,63 +356,6 @@ void SetupVertices()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-}
-
-void SetupVerticesSky()
-{
-	float skyVertices[] = {
-		// positions          
-		-1.0f,  1.0f, -1.0f,
-		-1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-		 1.0f,  1.0f, -1.0f,
-		-1.0f,  1.0f, -1.0f,
-
-		-1.0f, -1.0f,  1.0f,
-		-1.0f, -1.0f, -1.0f,
-		-1.0f,  1.0f, -1.0f,
-		-1.0f,  1.0f, -1.0f,
-		-1.0f,  1.0f,  1.0f,
-		-1.0f, -1.0f,  1.0f,
-
-		 1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-
-		-1.0f, -1.0f,  1.0f,
-		-1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f, -1.0f,  1.0f,
-		-1.0f, -1.0f,  1.0f,
-
-		-1.0f,  1.0f, -1.0f,
-		 1.0f,  1.0f, -1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		-1.0f,  1.0f,  1.0f,
-		-1.0f,  1.0f, -1.0f,
-
-		-1.0f, -1.0f, -1.0f,
-		-1.0f, -1.0f,  1.0f,
-		 1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-		-1.0f, -1.0f,  1.0f,
-		 1.0f, -1.0f,  1.0f
-	};
-
-
-	glGenVertexArrays(1, &SkyVAO);
-	glGenBuffers(1, &SkyVBO);
-	glBindVertexArray(SkyVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, SkyVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(skyVertices), skyVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
 }
 
 GLuint loadObject(string filepath, int& nVerts, glm::vec3 color)

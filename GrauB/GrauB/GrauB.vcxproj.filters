@@ -40,11 +40,5 @@
     <None Include="VertexShader.vs">
       <Filter>Arquivos de Recurso</Filter>
     </None>
-    <None Include="vsSky.vs">
-      <Filter>Arquivos de Recurso</Filter>
-    </None>
-    <None Include="fsSky.fs">
-      <Filter>Arquivos de Recurso</Filter>
-    </None>
   </ItemGroup>
 </Project>
